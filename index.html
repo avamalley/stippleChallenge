@@ -77,7 +77,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
 <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
-<div class="quarto-alternate-formats"><h2>Other Formats</h2><ul><li><a href="..\..\index.pdf"><i class="bi bi-file-pdf"></i>PDF</a></li></ul></div></div>
+<div class="quarto-alternate-formats"><h2>Other Formats</h2><ul><li><a href="index.pdf"><i class="bi bi-file-pdf"></i>PDF</a></li></ul></div></div>
 <main class="content" id="quarto-document-content">
 
 <header id="title-block-header" class="quarto-title-block default">
@@ -232,12 +232,13 @@ Attaching package: 'imager'</code></pre>
 <span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>original_img <span class="ot">&lt;-</span> <span class="fu">load.image</span>(img_path)</span>
 <span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Convert to grayscale if needed</span></span>
-<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span>(<span class="fu">dim</span>(original_img)[<span class="dv">4</span>] <span class="sc">==</span> <span class="dv">3</span>) {</span>
-<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>  original_img <span class="ot">&lt;-</span> <span class="fu">grayscale</span>(original_img)</span>
-<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Display the original image</span></span>
-<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(original_img, <span class="at">axes =</span> <span class="cn">FALSE</span>, <span class="at">main =</span> <span class="st">"Original Image"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Check channels (dim[3]), not depth (dim[4])</span></span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span>(<span class="fu">dim</span>(original_img)[<span class="dv">3</span>] <span class="sc">==</span> <span class="dv">3</span>) {</span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a>  original_img <span class="ot">&lt;-</span> <span class="fu">grayscale</span>(original_img)</span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Display the original image</span></span>
+<span id="cb16-14"><a href="#cb16-14" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(original_img, <span class="at">axes =</span> <span class="cn">FALSE</span>, <span class="at">main =</span> <span class="st">"Original Image"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
@@ -519,145 +520,138 @@ Attaching package: 'imager'</code></pre>
 </div>
 <div id="tabset-3-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-3-2-tab">
 <div class="cell">
-<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Note: R implementation provided for completeness, but Python is strongly recommended</span></span>
-<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="co"># The R implementation may have issues with the circular shift that need debugging</span></span>
-<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a><span class="co"># If you encounter problems (e.g., tiling/repeating patterns), please use the Python version</span></span>
-<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>toroidal_gaussian_kernel <span class="ot">&lt;-</span> <span class="cf">function</span>(h, w, sigma) {</span>
-<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a>  y <span class="ot">&lt;-</span> <span class="dv">0</span><span class="sc">:</span>(h<span class="dv">-1</span>)</span>
-<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a>  x <span class="ot">&lt;-</span> <span class="dv">0</span><span class="sc">:</span>(w<span class="dv">-1</span>)</span>
-<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb22-9"><a href="#cb22-9" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Compute toroidal distances</span></span>
-<span id="cb22-10"><a href="#cb22-10" aria-hidden="true" tabindex="-1"></a>  dy <span class="ot">&lt;-</span> <span class="fu">pmin</span>(y, h <span class="sc">-</span> y)</span>
-<span id="cb22-11"><a href="#cb22-11" aria-hidden="true" tabindex="-1"></a>  dx <span class="ot">&lt;-</span> <span class="fu">pmin</span>(x, w <span class="sc">-</span> x)</span>
-<span id="cb22-12"><a href="#cb22-12" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb22-13"><a href="#cb22-13" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Create distance matrices</span></span>
-<span id="cb22-14"><a href="#cb22-14" aria-hidden="true" tabindex="-1"></a>  dy_mat <span class="ot">&lt;-</span> <span class="fu">outer</span>(dy, <span class="fu">rep</span>(<span class="dv">1</span>, w))</span>
-<span id="cb22-15"><a href="#cb22-15" aria-hidden="true" tabindex="-1"></a>  dx_mat <span class="ot">&lt;-</span> <span class="fu">outer</span>(<span class="fu">rep</span>(<span class="dv">1</span>, h), dx)</span>
-<span id="cb22-16"><a href="#cb22-16" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb22-17"><a href="#cb22-17" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Compute Gaussian</span></span>
-<span id="cb22-18"><a href="#cb22-18" aria-hidden="true" tabindex="-1"></a>  kern <span class="ot">&lt;-</span> <span class="fu">exp</span>(<span class="sc">-</span>(dx_mat<span class="sc">^</span><span class="dv">2</span> <span class="sc">+</span> dy_mat<span class="sc">^</span><span class="dv">2</span>) <span class="sc">/</span> (<span class="fl">2.0</span> <span class="sc">*</span> sigma<span class="sc">^</span><span class="dv">2</span>))</span>
-<span id="cb22-19"><a href="#cb22-19" aria-hidden="true" tabindex="-1"></a>  kern <span class="ot">&lt;-</span> kern <span class="sc">/</span> <span class="fu">sum</span>(kern)  <span class="co"># Normalize</span></span>
-<span id="cb22-20"><a href="#cb22-20" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb22-21"><a href="#cb22-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(kern)</span>
-<span id="cb22-22"><a href="#cb22-22" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb22-23"><a href="#cb22-23" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-24"><a href="#cb22-24" aria-hidden="true" tabindex="-1"></a>void_and_cluster <span class="ot">&lt;-</span> <span class="cf">function</span>(input_img, </span>
-<span id="cb22-25"><a href="#cb22-25" aria-hidden="true" tabindex="-1"></a>                             <span class="at">percentage =</span> <span class="fl">0.08</span>,</span>
-<span id="cb22-26"><a href="#cb22-26" aria-hidden="true" tabindex="-1"></a>                             <span class="at">sigma =</span> <span class="fl">0.9</span>,</span>
-<span id="cb22-27"><a href="#cb22-27" aria-hidden="true" tabindex="-1"></a>                             <span class="at">content_bias =</span> <span class="fl">0.9</span>,</span>
-<span id="cb22-28"><a href="#cb22-28" aria-hidden="true" tabindex="-1"></a>                             <span class="at">importance_img =</span> <span class="cn">NULL</span>,</span>
-<span id="cb22-29"><a href="#cb22-29" aria-hidden="true" tabindex="-1"></a>                             <span class="at">noise_scale_factor =</span> <span class="fl">0.1</span>) {</span>
-<span id="cb22-30"><a href="#cb22-30" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Clip image to [0, 1]</span></span>
-<span id="cb22-31"><a href="#cb22-31" aria-hidden="true" tabindex="-1"></a>  I <span class="ot">&lt;-</span> <span class="fu">pmax</span>(<span class="fu">pmin</span>(input_img, <span class="fl">1.0</span>), <span class="fl">0.0</span>)</span>
-<span id="cb22-32"><a href="#cb22-32" aria-hidden="true" tabindex="-1"></a>  h <span class="ot">&lt;-</span> <span class="fu">nrow</span>(I)</span>
-<span id="cb22-33"><a href="#cb22-33" aria-hidden="true" tabindex="-1"></a>  w <span class="ot">&lt;-</span> <span class="fu">ncol</span>(I)</span>
-<span id="cb22-34"><a href="#cb22-34" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb22-35"><a href="#cb22-35" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Compute or use provided importance map</span></span>
-<span id="cb22-36"><a href="#cb22-36" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span>(<span class="fu">is.null</span>(importance_img)) {</span>
-<span id="cb22-37"><a href="#cb22-37" aria-hidden="true" tabindex="-1"></a>    importance <span class="ot">&lt;-</span> <span class="fu">compute_importance</span>(I)</span>
-<span id="cb22-38"><a href="#cb22-38" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> {</span>
-<span id="cb22-39"><a href="#cb22-39" aria-hidden="true" tabindex="-1"></a>    importance <span class="ot">&lt;-</span> <span class="fu">pmax</span>(<span class="fu">pmin</span>(importance_img, <span class="fl">1.0</span>), <span class="fl">0.0</span>)</span>
-<span id="cb22-40"><a href="#cb22-40" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb22-41"><a href="#cb22-41" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb22-42"><a href="#cb22-42" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Create toroidal Gaussian kernel for repulsion</span></span>
-<span id="cb22-43"><a href="#cb22-43" aria-hidden="true" tabindex="-1"></a>  kernel <span class="ot">&lt;-</span> <span class="fu">toroidal_gaussian_kernel</span>(h, w, sigma)</span>
-<span id="cb22-44"><a href="#cb22-44" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb22-45"><a href="#cb22-45" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Initialize energy field: lower energy → more likely to be picked</span></span>
-<span id="cb22-46"><a href="#cb22-46" aria-hidden="true" tabindex="-1"></a>  energy_current <span class="ot">&lt;-</span> <span class="sc">-</span>importance <span class="sc">*</span> content_bias</span>
-<span id="cb22-47"><a href="#cb22-47" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb22-48"><a href="#cb22-48" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Stipple buffer: start with white background; selected points become black dots</span></span>
-<span id="cb22-49"><a href="#cb22-49" aria-hidden="true" tabindex="-1"></a>  final_stipple <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fl">1.0</span>, <span class="at">nrow =</span> h, <span class="at">ncol =</span> w)</span>
-<span id="cb22-50"><a href="#cb22-50" aria-hidden="true" tabindex="-1"></a>  samples <span class="ot">&lt;-</span> <span class="fu">list</span>()</span>
-<span id="cb22-51"><a href="#cb22-51" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb22-52"><a href="#cb22-52" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Helper function to roll kernel to an arbitrary position</span></span>
-<span id="cb22-53"><a href="#cb22-53" aria-hidden="true" tabindex="-1"></a>  <span class="co"># This implements the equivalent of Python's np.roll(kernel, shift=y, axis=0) </span></span>
-<span id="cb22-54"><a href="#cb22-54" aria-hidden="true" tabindex="-1"></a>  <span class="co"># followed by np.roll(kernel, shift=x, axis=1)</span></span>
-<span id="cb22-55"><a href="#cb22-55" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Instead of rolling, we compute the toroidal distance directly for each position</span></span>
-<span id="cb22-56"><a href="#cb22-56" aria-hidden="true" tabindex="-1"></a>  energy_splat <span class="ot">&lt;-</span> <span class="cf">function</span>(y, x) {</span>
-<span id="cb22-57"><a href="#cb22-57" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Create a matrix of the same size as kernel</span></span>
-<span id="cb22-58"><a href="#cb22-58" aria-hidden="true" tabindex="-1"></a>    <span class="co"># For each position (i, j), compute the toroidal distance from (y, x)</span></span>
-<span id="cb22-59"><a href="#cb22-59" aria-hidden="true" tabindex="-1"></a>    <span class="co"># and use the kernel value at that distance</span></span>
-<span id="cb22-60"><a href="#cb22-60" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb22-61"><a href="#cb22-61" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Create coordinate grids (1-indexed in R)</span></span>
-<span id="cb22-62"><a href="#cb22-62" aria-hidden="true" tabindex="-1"></a>    i_grid <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">rep</span>(<span class="dv">1</span><span class="sc">:</span>h, <span class="at">each =</span> w), <span class="at">nrow =</span> h, <span class="at">ncol =</span> w)</span>
-<span id="cb22-63"><a href="#cb22-63" aria-hidden="true" tabindex="-1"></a>    j_grid <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">rep</span>(<span class="dv">1</span><span class="sc">:</span>w, <span class="at">times =</span> h), <span class="at">nrow =</span> h, <span class="at">ncol =</span> w)</span>
-<span id="cb22-64"><a href="#cb22-64" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb22-65"><a href="#cb22-65" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Convert to 0-indexed for distance calculation</span></span>
-<span id="cb22-66"><a href="#cb22-66" aria-hidden="true" tabindex="-1"></a>    i_0 <span class="ot">&lt;-</span> i_grid <span class="sc">-</span> <span class="dv">1</span></span>
-<span id="cb22-67"><a href="#cb22-67" aria-hidden="true" tabindex="-1"></a>    j_0 <span class="ot">&lt;-</span> j_grid <span class="sc">-</span> <span class="dv">1</span></span>
-<span id="cb22-68"><a href="#cb22-68" aria-hidden="true" tabindex="-1"></a>    y_0 <span class="ot">&lt;-</span> y <span class="sc">-</span> <span class="dv">1</span>  <span class="co"># Convert y to 0-indexed</span></span>
-<span id="cb22-69"><a href="#cb22-69" aria-hidden="true" tabindex="-1"></a>    x_0 <span class="ot">&lt;-</span> x <span class="sc">-</span> <span class="dv">1</span>  <span class="co"># Convert x to 0-indexed</span></span>
-<span id="cb22-70"><a href="#cb22-70" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb22-71"><a href="#cb22-71" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Compute toroidal distances</span></span>
-<span id="cb22-72"><a href="#cb22-72" aria-hidden="true" tabindex="-1"></a>    dy <span class="ot">&lt;-</span> <span class="fu">pmin</span>(<span class="fu">abs</span>(i_0 <span class="sc">-</span> y_0), h <span class="sc">-</span> <span class="fu">abs</span>(i_0 <span class="sc">-</span> y_0))</span>
-<span id="cb22-73"><a href="#cb22-73" aria-hidden="true" tabindex="-1"></a>    dx <span class="ot">&lt;-</span> <span class="fu">pmin</span>(<span class="fu">abs</span>(j_0 <span class="sc">-</span> x_0), w <span class="sc">-</span> <span class="fu">abs</span>(j_0 <span class="sc">-</span> x_0))</span>
-<span id="cb22-74"><a href="#cb22-74" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb22-75"><a href="#cb22-75" aria-hidden="true" tabindex="-1"></a>    <span class="co"># The kernel is centered at (0,0) in 0-indexed coordinates</span></span>
-<span id="cb22-76"><a href="#cb22-76" aria-hidden="true" tabindex="-1"></a>    <span class="co"># So we need to find which kernel position corresponds to distance (dy, dx)</span></span>
-<span id="cb22-77"><a href="#cb22-77" aria-hidden="true" tabindex="-1"></a>    <span class="co"># The kernel position is (dy, dx) in 0-indexed</span></span>
-<span id="cb22-78"><a href="#cb22-78" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Convert back to 1-indexed for R indexing</span></span>
-<span id="cb22-79"><a href="#cb22-79" aria-hidden="true" tabindex="-1"></a>    kern_i <span class="ot">&lt;-</span> dy <span class="sc">+</span> <span class="dv">1</span></span>
-<span id="cb22-80"><a href="#cb22-80" aria-hidden="true" tabindex="-1"></a>    kern_j <span class="ot">&lt;-</span> dx <span class="sc">+</span> <span class="dv">1</span></span>
-<span id="cb22-81"><a href="#cb22-81" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb22-82"><a href="#cb22-82" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Extract kernel values at these positions</span></span>
-<span id="cb22-83"><a href="#cb22-83" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Use matrix indexing: kernel[kern_i, kern_j] but need to handle vectorized indexing</span></span>
-<span id="cb22-84"><a href="#cb22-84" aria-hidden="true" tabindex="-1"></a>    kern_rolled <span class="ot">&lt;-</span> <span class="fu">matrix</span>(kernel[<span class="fu">cbind</span>(<span class="fu">as.vector</span>(kern_i), <span class="fu">as.vector</span>(kern_j))], </span>
-<span id="cb22-85"><a href="#cb22-85" aria-hidden="true" tabindex="-1"></a>                         <span class="at">nrow =</span> h, <span class="at">ncol =</span> w)</span>
-<span id="cb22-86"><a href="#cb22-86" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb22-87"><a href="#cb22-87" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(kern_rolled)</span>
-<span id="cb22-88"><a href="#cb22-88" aria-hidden="true" tabindex="-1"></a>  }</span>
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Note: R implementation uses true 2D circular shift (roll2d) to match Python's np.roll behavior</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>toroidal_gaussian_kernel <span class="ot">&lt;-</span> <span class="cf">function</span>(h, w, sigma) {</span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>  y <span class="ot">&lt;-</span> <span class="dv">0</span><span class="sc">:</span>(h<span class="dv">-1</span>)</span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>  x <span class="ot">&lt;-</span> <span class="dv">0</span><span class="sc">:</span>(w<span class="dv">-1</span>)</span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Compute toroidal distances</span></span>
+<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a>  dy <span class="ot">&lt;-</span> <span class="fu">pmin</span>(y, h <span class="sc">-</span> y)</span>
+<span id="cb22-9"><a href="#cb22-9" aria-hidden="true" tabindex="-1"></a>  dx <span class="ot">&lt;-</span> <span class="fu">pmin</span>(x, w <span class="sc">-</span> x)</span>
+<span id="cb22-10"><a href="#cb22-10" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb22-11"><a href="#cb22-11" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Create distance matrices</span></span>
+<span id="cb22-12"><a href="#cb22-12" aria-hidden="true" tabindex="-1"></a>  <span class="co"># each row gets same dy, each col gets same dx</span></span>
+<span id="cb22-13"><a href="#cb22-13" aria-hidden="true" tabindex="-1"></a>  dy_mat <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">rep</span>(dy, <span class="at">each =</span> w), <span class="at">nrow =</span> h, <span class="at">ncol =</span> w)</span>
+<span id="cb22-14"><a href="#cb22-14" aria-hidden="true" tabindex="-1"></a>  dx_mat <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">rep</span>(dx, <span class="at">times =</span> h), <span class="at">nrow =</span> h, <span class="at">ncol =</span> w)</span>
+<span id="cb22-15"><a href="#cb22-15" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb22-16"><a href="#cb22-16" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Compute Gaussian</span></span>
+<span id="cb22-17"><a href="#cb22-17" aria-hidden="true" tabindex="-1"></a>  kern <span class="ot">&lt;-</span> <span class="fu">exp</span>(<span class="sc">-</span>(dx_mat<span class="sc">^</span><span class="dv">2</span> <span class="sc">+</span> dy_mat<span class="sc">^</span><span class="dv">2</span>) <span class="sc">/</span> (<span class="fl">2.0</span> <span class="sc">*</span> sigma<span class="sc">^</span><span class="dv">2</span>))</span>
+<span id="cb22-18"><a href="#cb22-18" aria-hidden="true" tabindex="-1"></a>  kern <span class="ot">&lt;-</span> kern <span class="sc">/</span> <span class="fu">sum</span>(kern)  <span class="co"># Normalize</span></span>
+<span id="cb22-19"><a href="#cb22-19" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb22-20"><a href="#cb22-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(kern)</span>
+<span id="cb22-21"><a href="#cb22-21" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb22-22"><a href="#cb22-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-23"><a href="#cb22-23" aria-hidden="true" tabindex="-1"></a><span class="co"># Helper function for true 2D circular shift (equivalent to np.roll)</span></span>
+<span id="cb22-24"><a href="#cb22-24" aria-hidden="true" tabindex="-1"></a><span class="co"># np.roll equivalent: positive shift moves down/right</span></span>
+<span id="cb22-25"><a href="#cb22-25" aria-hidden="true" tabindex="-1"></a>roll2d <span class="ot">&lt;-</span> <span class="cf">function</span>(mat, <span class="at">shift_y =</span> <span class="dv">0</span>, <span class="at">shift_x =</span> <span class="dv">0</span>) {</span>
+<span id="cb22-26"><a href="#cb22-26" aria-hidden="true" tabindex="-1"></a>  h <span class="ot">&lt;-</span> <span class="fu">nrow</span>(mat)</span>
+<span id="cb22-27"><a href="#cb22-27" aria-hidden="true" tabindex="-1"></a>  w <span class="ot">&lt;-</span> <span class="fu">ncol</span>(mat)</span>
+<span id="cb22-28"><a href="#cb22-28" aria-hidden="true" tabindex="-1"></a>  sy <span class="ot">&lt;-</span> ((shift_y <span class="sc">%%</span> h) <span class="sc">+</span> h) <span class="sc">%%</span> h</span>
+<span id="cb22-29"><a href="#cb22-29" aria-hidden="true" tabindex="-1"></a>  sx <span class="ot">&lt;-</span> ((shift_x <span class="sc">%%</span> w) <span class="sc">+</span> w) <span class="sc">%%</span> w</span>
+<span id="cb22-30"><a href="#cb22-30" aria-hidden="true" tabindex="-1"></a>  rows <span class="ot">&lt;-</span> <span class="cf">if</span> (sy <span class="sc">==</span> <span class="dv">0</span>) <span class="dv">1</span><span class="sc">:</span>h <span class="cf">else</span> <span class="fu">c</span>((h <span class="sc">-</span> sy <span class="sc">+</span> <span class="dv">1</span>)<span class="sc">:</span>h, <span class="dv">1</span><span class="sc">:</span>(h <span class="sc">-</span> sy))</span>
+<span id="cb22-31"><a href="#cb22-31" aria-hidden="true" tabindex="-1"></a>  cols <span class="ot">&lt;-</span> <span class="cf">if</span> (sx <span class="sc">==</span> <span class="dv">0</span>) <span class="dv">1</span><span class="sc">:</span>w <span class="cf">else</span> <span class="fu">c</span>((w <span class="sc">-</span> sx <span class="sc">+</span> <span class="dv">1</span>)<span class="sc">:</span>w, <span class="dv">1</span><span class="sc">:</span>(w <span class="sc">-</span> sx))</span>
+<span id="cb22-32"><a href="#cb22-32" aria-hidden="true" tabindex="-1"></a>  mat[rows, cols, drop <span class="ot">=</span> <span class="cn">FALSE</span>]</span>
+<span id="cb22-33"><a href="#cb22-33" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb22-34"><a href="#cb22-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-35"><a href="#cb22-35" aria-hidden="true" tabindex="-1"></a>void_and_cluster <span class="ot">&lt;-</span> <span class="cf">function</span>(input_img, </span>
+<span id="cb22-36"><a href="#cb22-36" aria-hidden="true" tabindex="-1"></a>                             <span class="at">percentage =</span> <span class="fl">0.08</span>,</span>
+<span id="cb22-37"><a href="#cb22-37" aria-hidden="true" tabindex="-1"></a>                             <span class="at">sigma =</span> <span class="fl">0.9</span>,</span>
+<span id="cb22-38"><a href="#cb22-38" aria-hidden="true" tabindex="-1"></a>                             <span class="at">content_bias =</span> <span class="fl">0.9</span>,</span>
+<span id="cb22-39"><a href="#cb22-39" aria-hidden="true" tabindex="-1"></a>                             <span class="at">importance_img =</span> <span class="cn">NULL</span>,</span>
+<span id="cb22-40"><a href="#cb22-40" aria-hidden="true" tabindex="-1"></a>                             <span class="at">noise_scale_factor =</span> <span class="fl">0.1</span>) {</span>
+<span id="cb22-41"><a href="#cb22-41" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Clip image to [0, 1]</span></span>
+<span id="cb22-42"><a href="#cb22-42" aria-hidden="true" tabindex="-1"></a>  I <span class="ot">&lt;-</span> <span class="fu">pmax</span>(<span class="fu">pmin</span>(input_img, <span class="fl">1.0</span>), <span class="fl">0.0</span>)</span>
+<span id="cb22-43"><a href="#cb22-43" aria-hidden="true" tabindex="-1"></a>  h <span class="ot">&lt;-</span> <span class="fu">nrow</span>(I)</span>
+<span id="cb22-44"><a href="#cb22-44" aria-hidden="true" tabindex="-1"></a>  w <span class="ot">&lt;-</span> <span class="fu">ncol</span>(I)</span>
+<span id="cb22-45"><a href="#cb22-45" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb22-46"><a href="#cb22-46" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Compute or use provided importance map</span></span>
+<span id="cb22-47"><a href="#cb22-47" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span>(<span class="fu">is.null</span>(importance_img)) {</span>
+<span id="cb22-48"><a href="#cb22-48" aria-hidden="true" tabindex="-1"></a>    importance <span class="ot">&lt;-</span> <span class="fu">compute_importance</span>(I)</span>
+<span id="cb22-49"><a href="#cb22-49" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> {</span>
+<span id="cb22-50"><a href="#cb22-50" aria-hidden="true" tabindex="-1"></a>    importance <span class="ot">&lt;-</span> <span class="fu">pmax</span>(<span class="fu">pmin</span>(importance_img, <span class="fl">1.0</span>), <span class="fl">0.0</span>)</span>
+<span id="cb22-51"><a href="#cb22-51" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb22-52"><a href="#cb22-52" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb22-53"><a href="#cb22-53" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Create toroidal Gaussian kernel for repulsion</span></span>
+<span id="cb22-54"><a href="#cb22-54" aria-hidden="true" tabindex="-1"></a>  kernel <span class="ot">&lt;-</span> <span class="fu">toroidal_gaussian_kernel</span>(h, w, sigma)</span>
+<span id="cb22-55"><a href="#cb22-55" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb22-56"><a href="#cb22-56" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Initialize energy field: lower energy → more likely to be picked</span></span>
+<span id="cb22-57"><a href="#cb22-57" aria-hidden="true" tabindex="-1"></a>  energy_current <span class="ot">&lt;-</span> <span class="sc">-</span>importance <span class="sc">*</span> content_bias</span>
+<span id="cb22-58"><a href="#cb22-58" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb22-59"><a href="#cb22-59" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Stipple buffer: start with white background; selected points become black dots</span></span>
+<span id="cb22-60"><a href="#cb22-60" aria-hidden="true" tabindex="-1"></a>  final_stipple <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fl">1.0</span>, <span class="at">nrow =</span> h, <span class="at">ncol =</span> w)</span>
+<span id="cb22-61"><a href="#cb22-61" aria-hidden="true" tabindex="-1"></a>  samples <span class="ot">&lt;-</span> <span class="fu">vector</span>(<span class="st">"list"</span>, <span class="fu">as.integer</span>(h <span class="sc">*</span> w <span class="sc">*</span> percentage))</span>
+<span id="cb22-62"><a href="#cb22-62" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb22-63"><a href="#cb22-63" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Helper function to roll kernel to an arbitrary position</span></span>
+<span id="cb22-64"><a href="#cb22-64" aria-hidden="true" tabindex="-1"></a>  <span class="co"># This implements the exact equivalent of Python's np.roll(kernel, shift=y, axis=0) </span></span>
+<span id="cb22-65"><a href="#cb22-65" aria-hidden="true" tabindex="-1"></a>  <span class="co"># followed by np.roll(kernel, shift=x, axis=1)</span></span>
+<span id="cb22-66"><a href="#cb22-66" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Uses true 2D circular shift to preserve directionality and avoid quadrant-mirroring</span></span>
+<span id="cb22-67"><a href="#cb22-67" aria-hidden="true" tabindex="-1"></a>  energy_splat <span class="ot">&lt;-</span> <span class="cf">function</span>(y, x) {</span>
+<span id="cb22-68"><a href="#cb22-68" aria-hidden="true" tabindex="-1"></a>    <span class="co"># exact np.roll(kernel, y; x)</span></span>
+<span id="cb22-69"><a href="#cb22-69" aria-hidden="true" tabindex="-1"></a>    <span class="fu">roll2d</span>(kernel, <span class="at">shift_y =</span> y <span class="sc">-</span> <span class="dv">1</span>, <span class="at">shift_x =</span> x <span class="sc">-</span> <span class="dv">1</span>)</span>
+<span id="cb22-70"><a href="#cb22-70" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb22-71"><a href="#cb22-71" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb22-72"><a href="#cb22-72" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Number of points to select</span></span>
+<span id="cb22-73"><a href="#cb22-73" aria-hidden="true" tabindex="-1"></a>  num_points <span class="ot">&lt;-</span> <span class="fu">as.integer</span>(h <span class="sc">*</span> w <span class="sc">*</span> percentage)</span>
+<span id="cb22-74"><a href="#cb22-74" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb22-75"><a href="#cb22-75" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Set seed for reproducibility</span></span>
+<span id="cb22-76"><a href="#cb22-76" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set.seed</span>(<span class="dv">42</span>)</span>
+<span id="cb22-77"><a href="#cb22-77" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb22-78"><a href="#cb22-78" aria-hidden="true" tabindex="-1"></a>  <span class="co"># --- first point: pick min in a center window ---</span></span>
+<span id="cb22-79"><a href="#cb22-79" aria-hidden="true" tabindex="-1"></a>  cy <span class="ot">&lt;-</span> <span class="fu">as.integer</span>(h <span class="sc">/</span> <span class="dv">2</span>)</span>
+<span id="cb22-80"><a href="#cb22-80" aria-hidden="true" tabindex="-1"></a>  cx <span class="ot">&lt;-</span> <span class="fu">as.integer</span>(w <span class="sc">/</span> <span class="dv">2</span>)</span>
+<span id="cb22-81"><a href="#cb22-81" aria-hidden="true" tabindex="-1"></a>  r <span class="ot">&lt;-</span> <span class="fu">min</span>(<span class="dv">20</span>L, <span class="fu">as.integer</span>(h <span class="sc">/</span> <span class="dv">10</span>), <span class="fu">as.integer</span>(w <span class="sc">/</span> <span class="dv">10</span>))</span>
+<span id="cb22-82"><a href="#cb22-82" aria-hidden="true" tabindex="-1"></a>  y_start <span class="ot">&lt;-</span> <span class="fu">max</span>(<span class="dv">1</span>L, cy <span class="sc">-</span> r)</span>
+<span id="cb22-83"><a href="#cb22-83" aria-hidden="true" tabindex="-1"></a>  y_end <span class="ot">&lt;-</span> <span class="fu">min</span>(h, cy <span class="sc">+</span> r)</span>
+<span id="cb22-84"><a href="#cb22-84" aria-hidden="true" tabindex="-1"></a>  x_start <span class="ot">&lt;-</span> <span class="fu">max</span>(<span class="dv">1</span>L, cx <span class="sc">-</span> r)</span>
+<span id="cb22-85"><a href="#cb22-85" aria-hidden="true" tabindex="-1"></a>  x_end <span class="ot">&lt;-</span> <span class="fu">min</span>(w, cx <span class="sc">+</span> r)</span>
+<span id="cb22-86"><a href="#cb22-86" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb22-87"><a href="#cb22-87" aria-hidden="true" tabindex="-1"></a>  region <span class="ot">&lt;-</span> energy_current[y_start<span class="sc">:</span>y_end, x_start<span class="sc">:</span>x_end]</span>
+<span id="cb22-88"><a href="#cb22-88" aria-hidden="true" tabindex="-1"></a>  flat_idx <span class="ot">&lt;-</span> <span class="fu">which.min</span>(region)</span>
 <span id="cb22-89"><a href="#cb22-89" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb22-90"><a href="#cb22-90" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Number of points to select</span></span>
-<span id="cb22-91"><a href="#cb22-91" aria-hidden="true" tabindex="-1"></a>  num_points <span class="ot">&lt;-</span> <span class="fu">as.integer</span>(<span class="fu">length</span>(I) <span class="sc">*</span> percentage)</span>
-<span id="cb22-92"><a href="#cb22-92" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb22-93"><a href="#cb22-93" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Choose first point near center with minimal energy</span></span>
-<span id="cb22-94"><a href="#cb22-94" aria-hidden="true" tabindex="-1"></a>  cy <span class="ot">&lt;-</span> <span class="fu">as.integer</span>(h <span class="sc">/</span> <span class="dv">2</span>)</span>
-<span id="cb22-95"><a href="#cb22-95" aria-hidden="true" tabindex="-1"></a>  cx <span class="ot">&lt;-</span> <span class="fu">as.integer</span>(w <span class="sc">/</span> <span class="dv">2</span>)</span>
-<span id="cb22-96"><a href="#cb22-96" aria-hidden="true" tabindex="-1"></a>  r <span class="ot">&lt;-</span> <span class="fu">min</span>(<span class="dv">20</span>, <span class="fu">as.integer</span>(h <span class="sc">/</span> <span class="dv">10</span>), <span class="fu">as.integer</span>(w <span class="sc">/</span> <span class="dv">10</span>))</span>
-<span id="cb22-97"><a href="#cb22-97" aria-hidden="true" tabindex="-1"></a>  y_start <span class="ot">&lt;-</span> <span class="fu">max</span>(<span class="dv">1</span>, cy <span class="sc">-</span> r)</span>
-<span id="cb22-98"><a href="#cb22-98" aria-hidden="true" tabindex="-1"></a>  y_end <span class="ot">&lt;-</span> <span class="fu">min</span>(h, cy <span class="sc">+</span> r)</span>
-<span id="cb22-99"><a href="#cb22-99" aria-hidden="true" tabindex="-1"></a>  x_start <span class="ot">&lt;-</span> <span class="fu">max</span>(<span class="dv">1</span>, cx <span class="sc">-</span> r)</span>
-<span id="cb22-100"><a href="#cb22-100" aria-hidden="true" tabindex="-1"></a>  x_end <span class="ot">&lt;-</span> <span class="fu">min</span>(w, cx <span class="sc">+</span> r)</span>
-<span id="cb22-101"><a href="#cb22-101" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb22-102"><a href="#cb22-102" aria-hidden="true" tabindex="-1"></a>  region <span class="ot">&lt;-</span> energy_current[y_start<span class="sc">:</span>y_end, x_start<span class="sc">:</span>x_end]</span>
-<span id="cb22-103"><a href="#cb22-103" aria-hidden="true" tabindex="-1"></a>  flat_idx <span class="ot">&lt;-</span> <span class="fu">which.min</span>(region)</span>
-<span id="cb22-104"><a href="#cb22-104" aria-hidden="true" tabindex="-1"></a>  y0 <span class="ot">&lt;-</span> ((flat_idx <span class="sc">-</span> <span class="dv">1</span>) <span class="sc">%/%</span> <span class="fu">ncol</span>(region)) <span class="sc">+</span> y_start</span>
-<span id="cb22-105"><a href="#cb22-105" aria-hidden="true" tabindex="-1"></a>  x0 <span class="ot">&lt;-</span> ((flat_idx <span class="sc">-</span> <span class="dv">1</span>) <span class="sc">%%</span> <span class="fu">ncol</span>(region)) <span class="sc">+</span> x_start</span>
-<span id="cb22-106"><a href="#cb22-106" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb22-107"><a href="#cb22-107" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Place first point</span></span>
-<span id="cb22-108"><a href="#cb22-108" aria-hidden="true" tabindex="-1"></a>  energy_current <span class="ot">&lt;-</span> energy_current <span class="sc">+</span> <span class="fu">energy_splat</span>(y0, x0)</span>
-<span id="cb22-109"><a href="#cb22-109" aria-hidden="true" tabindex="-1"></a>  energy_current[y0, x0] <span class="ot">&lt;-</span> <span class="cn">Inf</span>  <span class="co"># Prevent reselection</span></span>
-<span id="cb22-110"><a href="#cb22-110" aria-hidden="true" tabindex="-1"></a>  samples[[<span class="dv">1</span>]] <span class="ot">&lt;-</span> <span class="fu">c</span>(y0, x0, I[y0, x0])</span>
-<span id="cb22-111"><a href="#cb22-111" aria-hidden="true" tabindex="-1"></a>  final_stipple[y0, x0] <span class="ot">&lt;-</span> <span class="fl">0.0</span>  <span class="co"># Black dot</span></span>
-<span id="cb22-112"><a href="#cb22-112" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb22-113"><a href="#cb22-113" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Iteratively place remaining points</span></span>
-<span id="cb22-114"><a href="#cb22-114" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">2</span><span class="sc">:</span>num_points) {</span>
-<span id="cb22-115"><a href="#cb22-115" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Add exploration noise that decreases over time</span></span>
-<span id="cb22-116"><a href="#cb22-116" aria-hidden="true" tabindex="-1"></a>    exploration <span class="ot">&lt;-</span> <span class="fl">1.0</span> <span class="sc">-</span> ((i <span class="sc">-</span> <span class="dv">1</span>) <span class="sc">/</span> num_points) <span class="sc">*</span> <span class="fl">0.5</span>  <span class="co"># Decrease from 1.0 to 0.5</span></span>
-<span id="cb22-117"><a href="#cb22-117" aria-hidden="true" tabindex="-1"></a>    noise <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">rnorm</span>(h <span class="sc">*</span> w, <span class="dv">0</span>, noise_scale_factor <span class="sc">*</span> content_bias <span class="sc">*</span> exploration), </span>
-<span id="cb22-118"><a href="#cb22-118" aria-hidden="true" tabindex="-1"></a>                    <span class="at">nrow =</span> h, <span class="at">ncol =</span> w)</span>
-<span id="cb22-119"><a href="#cb22-119" aria-hidden="true" tabindex="-1"></a>    energy_with_noise <span class="ot">&lt;-</span> energy_current <span class="sc">+</span> noise</span>
-<span id="cb22-120"><a href="#cb22-120" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb22-121"><a href="#cb22-121" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Find position with minimum energy (with noise for exploration)</span></span>
-<span id="cb22-122"><a href="#cb22-122" aria-hidden="true" tabindex="-1"></a>    pos_flat <span class="ot">&lt;-</span> <span class="fu">which.min</span>(energy_with_noise)</span>
-<span id="cb22-123"><a href="#cb22-123" aria-hidden="true" tabindex="-1"></a>    y <span class="ot">&lt;-</span> ((pos_flat <span class="sc">-</span> <span class="dv">1</span>) <span class="sc">%/%</span> w) <span class="sc">+</span> <span class="dv">1</span></span>
-<span id="cb22-124"><a href="#cb22-124" aria-hidden="true" tabindex="-1"></a>    x <span class="ot">&lt;-</span> ((pos_flat <span class="sc">-</span> <span class="dv">1</span>) <span class="sc">%%</span> w) <span class="sc">+</span> <span class="dv">1</span></span>
-<span id="cb22-125"><a href="#cb22-125" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb22-126"><a href="#cb22-126" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Add Gaussian splat to prevent nearby points from being selected</span></span>
-<span id="cb22-127"><a href="#cb22-127" aria-hidden="true" tabindex="-1"></a>    energy_current <span class="ot">&lt;-</span> energy_current <span class="sc">+</span> <span class="fu">energy_splat</span>(y, x)</span>
-<span id="cb22-128"><a href="#cb22-128" aria-hidden="true" tabindex="-1"></a>    energy_current[y, x] <span class="ot">&lt;-</span> <span class="cn">Inf</span>  <span class="co"># Prevent reselection</span></span>
-<span id="cb22-129"><a href="#cb22-129" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb22-130"><a href="#cb22-130" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Record the sample</span></span>
-<span id="cb22-131"><a href="#cb22-131" aria-hidden="true" tabindex="-1"></a>    samples[[i]] <span class="ot">&lt;-</span> <span class="fu">c</span>(y, x, I[y, x])</span>
-<span id="cb22-132"><a href="#cb22-132" aria-hidden="true" tabindex="-1"></a>    final_stipple[y, x] <span class="ot">&lt;-</span> <span class="fl">0.0</span>  <span class="co"># Black dot</span></span>
-<span id="cb22-133"><a href="#cb22-133" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb22-134"><a href="#cb22-134" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb22-135"><a href="#cb22-135" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Convert samples list to matrix</span></span>
-<span id="cb22-136"><a href="#cb22-136" aria-hidden="true" tabindex="-1"></a>  samples_matrix <span class="ot">&lt;-</span> <span class="fu">do.call</span>(rbind, samples)</span>
-<span id="cb22-137"><a href="#cb22-137" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb22-138"><a href="#cb22-138" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(<span class="fu">list</span>(<span class="at">stipple =</span> final_stipple, <span class="at">samples =</span> samples_matrix))</span>
-<span id="cb22-139"><a href="#cb22-139" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb22-90"><a href="#cb22-90" aria-hidden="true" tabindex="-1"></a>  <span class="co"># IMPORTANT: R is column-major -&gt; (y,x) from flat:</span></span>
+<span id="cb22-91"><a href="#cb22-91" aria-hidden="true" tabindex="-1"></a>  <span class="co"># y = ((idx-1) %% nrow) + 1 ; x = ((idx-1) %/% nrow) + 1</span></span>
+<span id="cb22-92"><a href="#cb22-92" aria-hidden="true" tabindex="-1"></a>  ry <span class="ot">&lt;-</span> ((flat_idx <span class="sc">-</span> <span class="dv">1</span>) <span class="sc">%%</span> <span class="fu">nrow</span>(region)) <span class="sc">+</span> <span class="dv">1</span></span>
+<span id="cb22-93"><a href="#cb22-93" aria-hidden="true" tabindex="-1"></a>  rx <span class="ot">&lt;-</span> ((flat_idx <span class="sc">-</span> <span class="dv">1</span>) <span class="sc">%/%</span> <span class="fu">nrow</span>(region)) <span class="sc">+</span> <span class="dv">1</span></span>
+<span id="cb22-94"><a href="#cb22-94" aria-hidden="true" tabindex="-1"></a>  y0 <span class="ot">&lt;-</span> y_start <span class="sc">+</span> ry <span class="sc">-</span> <span class="dv">1</span></span>
+<span id="cb22-95"><a href="#cb22-95" aria-hidden="true" tabindex="-1"></a>  x0 <span class="ot">&lt;-</span> x_start <span class="sc">+</span> rx <span class="sc">-</span> <span class="dv">1</span></span>
+<span id="cb22-96"><a href="#cb22-96" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb22-97"><a href="#cb22-97" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Place first point</span></span>
+<span id="cb22-98"><a href="#cb22-98" aria-hidden="true" tabindex="-1"></a>  energy_current <span class="ot">&lt;-</span> energy_current <span class="sc">+</span> <span class="fu">energy_splat</span>(y0, x0)</span>
+<span id="cb22-99"><a href="#cb22-99" aria-hidden="true" tabindex="-1"></a>  energy_current[y0, x0] <span class="ot">&lt;-</span> <span class="cn">Inf</span>  <span class="co"># Prevent reselection</span></span>
+<span id="cb22-100"><a href="#cb22-100" aria-hidden="true" tabindex="-1"></a>  samples[[<span class="dv">1</span>]] <span class="ot">&lt;-</span> <span class="fu">c</span>(y0, x0, I[y0, x0])</span>
+<span id="cb22-101"><a href="#cb22-101" aria-hidden="true" tabindex="-1"></a>  final_stipple[y0, x0] <span class="ot">&lt;-</span> <span class="fl">0.0</span>  <span class="co"># Black dot</span></span>
+<span id="cb22-102"><a href="#cb22-102" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb22-103"><a href="#cb22-103" aria-hidden="true" tabindex="-1"></a>  <span class="co"># --- iterate ---</span></span>
+<span id="cb22-104"><a href="#cb22-104" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">2</span><span class="sc">:</span>num_points) {</span>
+<span id="cb22-105"><a href="#cb22-105" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Add exploration noise that decreases over time</span></span>
+<span id="cb22-106"><a href="#cb22-106" aria-hidden="true" tabindex="-1"></a>    exploration <span class="ot">&lt;-</span> <span class="fl">1.0</span> <span class="sc">-</span> ((i <span class="sc">-</span> <span class="dv">1</span>) <span class="sc">/</span> num_points) <span class="sc">*</span> <span class="fl">0.5</span>  <span class="co"># Decrease from 1.0 to 0.5</span></span>
+<span id="cb22-107"><a href="#cb22-107" aria-hidden="true" tabindex="-1"></a>    noise <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">rnorm</span>(h <span class="sc">*</span> w, <span class="dv">0</span>, noise_scale_factor <span class="sc">*</span> content_bias <span class="sc">*</span> exploration), </span>
+<span id="cb22-108"><a href="#cb22-108" aria-hidden="true" tabindex="-1"></a>                    <span class="at">nrow =</span> h, <span class="at">ncol =</span> w)</span>
+<span id="cb22-109"><a href="#cb22-109" aria-hidden="true" tabindex="-1"></a>    energy_with_noise <span class="ot">&lt;-</span> energy_current <span class="sc">+</span> noise</span>
+<span id="cb22-110"><a href="#cb22-110" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb22-111"><a href="#cb22-111" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Find position with minimum energy (with noise for exploration)</span></span>
+<span id="cb22-112"><a href="#cb22-112" aria-hidden="true" tabindex="-1"></a>    pos_flat <span class="ot">&lt;-</span> <span class="fu">which.min</span>(energy_with_noise)</span>
+<span id="cb22-113"><a href="#cb22-113" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb22-114"><a href="#cb22-114" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Column-major unflatten:</span></span>
+<span id="cb22-115"><a href="#cb22-115" aria-hidden="true" tabindex="-1"></a>    <span class="co"># R matrices are column-major, so y = (idx-1) %% h + 1, x = (idx-1) %/% h + 1</span></span>
+<span id="cb22-116"><a href="#cb22-116" aria-hidden="true" tabindex="-1"></a>    y <span class="ot">&lt;-</span> ((pos_flat <span class="sc">-</span> <span class="dv">1</span>) <span class="sc">%%</span> h) <span class="sc">+</span> <span class="dv">1</span></span>
+<span id="cb22-117"><a href="#cb22-117" aria-hidden="true" tabindex="-1"></a>    x <span class="ot">&lt;-</span> ((pos_flat <span class="sc">-</span> <span class="dv">1</span>) <span class="sc">%/%</span> h) <span class="sc">+</span> <span class="dv">1</span></span>
+<span id="cb22-118"><a href="#cb22-118" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb22-119"><a href="#cb22-119" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Add Gaussian splat to prevent nearby points from being selected</span></span>
+<span id="cb22-120"><a href="#cb22-120" aria-hidden="true" tabindex="-1"></a>    energy_current <span class="ot">&lt;-</span> energy_current <span class="sc">+</span> <span class="fu">energy_splat</span>(y, x)</span>
+<span id="cb22-121"><a href="#cb22-121" aria-hidden="true" tabindex="-1"></a>    energy_current[y, x] <span class="ot">&lt;-</span> <span class="cn">Inf</span>  <span class="co"># Prevent reselection</span></span>
+<span id="cb22-122"><a href="#cb22-122" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb22-123"><a href="#cb22-123" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Record the sample</span></span>
+<span id="cb22-124"><a href="#cb22-124" aria-hidden="true" tabindex="-1"></a>    samples[[i]] <span class="ot">&lt;-</span> <span class="fu">c</span>(y, x, I[y, x])</span>
+<span id="cb22-125"><a href="#cb22-125" aria-hidden="true" tabindex="-1"></a>    final_stipple[y, x] <span class="ot">&lt;-</span> <span class="fl">0.0</span>  <span class="co"># Black dot</span></span>
+<span id="cb22-126"><a href="#cb22-126" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb22-127"><a href="#cb22-127" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb22-128"><a href="#cb22-128" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Convert samples list to matrix</span></span>
+<span id="cb22-129"><a href="#cb22-129" aria-hidden="true" tabindex="-1"></a>  samples_matrix <span class="ot">&lt;-</span> <span class="fu">do.call</span>(rbind, samples[<span class="dv">1</span><span class="sc">:</span>num_points])</span>
+<span id="cb22-130"><a href="#cb22-130" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb22-131"><a href="#cb22-131" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(<span class="fu">list</span>(<span class="at">stipple =</span> final_stipple, <span class="at">samples =</span> samples_matrix))</span>
+<span id="cb22-132"><a href="#cb22-132" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </div>
 </div>
@@ -725,12 +719,16 @@ Attaching package: 'imager'</code></pre>
 <span id="cb27-11"><a href="#cb27-11" aria-hidden="true" tabindex="-1"></a>}</span>
 <span id="cb27-12"><a href="#cb27-12" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb27-13"><a href="#cb27-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Convert to matrix and normalize</span></span>
-<span id="cb27-14"><a href="#cb27-14" aria-hidden="true" tabindex="-1"></a>img_matrix <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(img_resized)</span>
-<span id="cb27-15"><a href="#cb27-15" aria-hidden="true" tabindex="-1"></a>img_matrix <span class="ot">&lt;-</span> img_matrix <span class="sc">/</span> <span class="fu">max</span>(img_matrix)</span>
-<span id="cb27-16"><a href="#cb27-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb27-17"><a href="#cb27-17" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Final image shape:"</span>, <span class="fu">dim</span>(img_matrix)[<span class="dv">1</span>], <span class="st">"x"</span>, <span class="fu">dim</span>(img_matrix)[<span class="dv">2</span>], <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb27-14"><a href="#cb27-14" aria-hidden="true" tabindex="-1"></a><span class="co"># imager uses (x,y,cc,z) = (width, height, channels, depth)</span></span>
+<span id="cb27-15"><a href="#cb27-15" aria-hidden="true" tabindex="-1"></a><span class="co"># but R matrices use (row, col) = (y, x)</span></span>
+<span id="cb27-16"><a href="#cb27-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Extract grayscale plane and transpose to get [h, w] orientation</span></span>
+<span id="cb27-17"><a href="#cb27-17" aria-hidden="true" tabindex="-1"></a>arr <span class="ot">&lt;-</span> <span class="fu">as.array</span>(img_resized)          <span class="co"># dims: [x, y, cc, z] = [w, h, 1, 1]</span></span>
+<span id="cb27-18"><a href="#cb27-18" aria-hidden="true" tabindex="-1"></a>img_matrix <span class="ot">&lt;-</span> <span class="fu">t</span>(arr[,,<span class="dv">1</span>,<span class="dv">1</span>])           <span class="co"># now dims: [h, w]  (row=y, col=x)</span></span>
+<span id="cb27-19"><a href="#cb27-19" aria-hidden="true" tabindex="-1"></a>img_matrix <span class="ot">&lt;-</span> img_matrix <span class="sc">/</span> <span class="fu">max</span>(img_matrix)</span>
+<span id="cb27-20"><a href="#cb27-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-21"><a href="#cb27-21" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Final image shape:"</span>, <span class="fu">nrow</span>(img_matrix), <span class="st">"x"</span>, <span class="fu">ncol</span>(img_matrix), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>Final image shape: 250 x 375 </code></pre>
+<pre><code>Final image shape: 375 x 250 </code></pre>
 </div>
 <div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Compute importance map</span></span>
 <span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a>importance_map <span class="ot">&lt;-</span> <span class="fu">compute_importance</span>(img_matrix)</span>
@@ -800,7 +798,7 @@ Attaching package: 'imager'</code></pre>
 </div>
 <div class="sourceCode cell-code" id="cb41"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Stipple pattern shape:"</span>, <span class="fu">nrow</span>(stipple_pattern), <span class="st">"x"</span>, <span class="fu">ncol</span>(stipple_pattern), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>Stipple pattern shape: 250 x 375 </code></pre>
+<pre><code>Stipple pattern shape: 375 x 250 </code></pre>
 </div>
 </div>
 </div>
@@ -857,9 +855,16 @@ Attaching package: 'imager'</code></pre>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb50"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb50-1"><a href="#cb50-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">3</span>), <span class="at">mar =</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">2</span>))</span>
 <span id="cb50-2"><a href="#cb50-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb50-3"><a href="#cb50-3" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(img_resized, <span class="at">axes =</span> <span class="cn">FALSE</span>, <span class="at">main =</span> <span class="st">"Original Image"</span>)</span>
-<span id="cb50-4"><a href="#cb50-4" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(<span class="fu">as.cimg</span>(importance_map), <span class="at">axes =</span> <span class="cn">FALSE</span>, <span class="at">main =</span> <span class="st">"Importance Map"</span>)</span>
-<span id="cb50-5"><a href="#cb50-5" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(<span class="fu">as.cimg</span>(stipple_pattern), <span class="at">axes =</span> <span class="cn">FALSE</span>, <span class="at">main =</span> <span class="st">"Blue Noise Stippling"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb50-3"><a href="#cb50-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Original</span></span>
+<span id="cb50-4"><a href="#cb50-4" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(img_resized, <span class="at">axes =</span> <span class="cn">FALSE</span>, <span class="at">main =</span> <span class="st">"Original Image"</span>)</span>
+<span id="cb50-5"><a href="#cb50-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-6"><a href="#cb50-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Importance map (matrix [h, w]) -&gt; transpose for imager ([x, y])</span></span>
+<span id="cb50-7"><a href="#cb50-7" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(<span class="fu">as.cimg</span>(<span class="fu">t</span>(importance_map), <span class="at">x =</span> <span class="fu">ncol</span>(importance_map), <span class="at">y =</span> <span class="fu">nrow</span>(importance_map), <span class="at">cc =</span> <span class="dv">1</span>), </span>
+<span id="cb50-8"><a href="#cb50-8" aria-hidden="true" tabindex="-1"></a>     <span class="at">axes =</span> <span class="cn">FALSE</span>, <span class="at">main =</span> <span class="st">"Importance Map"</span>)</span>
+<span id="cb50-9"><a href="#cb50-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-10"><a href="#cb50-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Stipple pattern (matrix [h, w]) -&gt; transpose for imager ([x, y])</span></span>
+<span id="cb50-11"><a href="#cb50-11" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(<span class="fu">as.cimg</span>(<span class="fu">t</span>(stipple_pattern), <span class="at">x =</span> <span class="fu">ncol</span>(stipple_pattern), <span class="at">y =</span> <span class="fu">nrow</span>(stipple_pattern), <span class="at">cc =</span> <span class="dv">1</span>), </span>
+<span id="cb50-12"><a href="#cb50-12" aria-hidden="true" tabindex="-1"></a>     <span class="at">axes =</span> <span class="cn">FALSE</span>, <span class="at">main =</span> <span class="st">"Blue Noise Stippling"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
@@ -940,7 +945,7 @@ Attaching package: 'imager'</code></pre>
 </div>
 <div class="sourceCode cell-code" id="cb61"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb61-1"><a href="#cb61-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Image shape:"</span>, <span class="fu">nrow</span>(img_matrix), <span class="st">"x"</span>, <span class="fu">ncol</span>(img_matrix), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>Image shape: 250 x 375 </code></pre>
+<pre><code>Image shape: 375 x 250 </code></pre>
 </div>
 <div class="sourceCode cell-code" id="cb63"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb63-1"><a href="#cb63-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create progressive frames by adding points sequentially</span></span>
 <span id="cb63-2"><a href="#cb63-2" aria-hidden="true" tabindex="-1"></a>frame_increment <span class="ot">&lt;-</span> <span class="dv">100</span></span>

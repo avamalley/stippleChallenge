@@ -103,7 +103,8 @@ img_path <- 'fleischhacker.jpg'
 original_img <- load.image(img_path)
 
 # Convert to grayscale if needed
-if(dim(original_img)[4] == 3) {
+# Check channels (dim[3]), not depth (dim[4])
+if(dim(original_img)[3] == 3) {
   original_img <- grayscale(original_img)
 }
 
@@ -400,9 +401,7 @@ def void_and_cluster(
 #| message: false
 #| warning: false
 
-# Note: R implementation provided for completeness, but Python is strongly recommended
-# The R implementation may have issues with the circular shift that need debugging
-# If you encounter problems (e.g., tiling/repeating patterns), please use the Python version
+# Note: R implementation uses true 2D circular shift (roll2d) to match Python's np.roll behavior
 
 toroidal_gaussian_kernel <- function(h, w, sigma) {
   y <- 0:(h-1)
@@ -413,14 +412,27 @@ toroidal_gaussian_kernel <- function(h, w, sigma) {
   dx <- pmin(x, w - x)
   
   # Create distance matrices
-  dy_mat <- outer(dy, rep(1, w))
-  dx_mat <- outer(rep(1, h), dx)
+  # each row gets same dy, each col gets same dx
+  dy_mat <- matrix(rep(dy, each = w), nrow = h, ncol = w)
+  dx_mat <- matrix(rep(dx, times = h), nrow = h, ncol = w)
   
   # Compute Gaussian
   kern <- exp(-(dx_mat^2 + dy_mat^2) / (2.0 * sigma^2))
   kern <- kern / sum(kern)  # Normalize
   
   return(kern)
+}
+
+# Helper function for true 2D circular shift (equivalent to np.roll)
+# np.roll equivalent: positive shift moves down/right
+roll2d <- function(mat, shift_y = 0, shift_x = 0) {
+  h <- nrow(mat)
+  w <- ncol(mat)
+  sy <- ((shift_y %% h) + h) %% h
+  sx <- ((shift_x %% w) + w) %% w
+  rows <- if (sy == 0) 1:h else c((h - sy + 1):h, 1:(h - sy))
+  cols <- if (sx == 0) 1:w else c((w - sx + 1):w, 1:(w - sx))
+  mat[rows, cols, drop = FALSE]
 }
 
 void_and_cluster <- function(input_img, 
@@ -449,62 +461,41 @@ void_and_cluster <- function(input_img,
   
   # Stipple buffer: start with white background; selected points become black dots
   final_stipple <- matrix(1.0, nrow = h, ncol = w)
-  samples <- list()
+  samples <- vector("list", as.integer(h * w * percentage))
   
   # Helper function to roll kernel to an arbitrary position
-  # This implements the equivalent of Python's np.roll(kernel, shift=y, axis=0) 
+  # This implements the exact equivalent of Python's np.roll(kernel, shift=y, axis=0) 
   # followed by np.roll(kernel, shift=x, axis=1)
-  # Instead of rolling, we compute the toroidal distance directly for each position
+  # Uses true 2D circular shift to preserve directionality and avoid quadrant-mirroring
   energy_splat <- function(y, x) {
-    # Create a matrix of the same size as kernel
-    # For each position (i, j), compute the toroidal distance from (y, x)
-    # and use the kernel value at that distance
-    
-    # Create coordinate grids (1-indexed in R)
-    i_grid <- matrix(rep(1:h, each = w), nrow = h, ncol = w)
-    j_grid <- matrix(rep(1:w, times = h), nrow = h, ncol = w)
-    
-    # Convert to 0-indexed for distance calculation
-    i_0 <- i_grid - 1
-    j_0 <- j_grid - 1
-    y_0 <- y - 1  # Convert y to 0-indexed
-    x_0 <- x - 1  # Convert x to 0-indexed
-    
-    # Compute toroidal distances
-    dy <- pmin(abs(i_0 - y_0), h - abs(i_0 - y_0))
-    dx <- pmin(abs(j_0 - x_0), w - abs(j_0 - x_0))
-    
-    # The kernel is centered at (0,0) in 0-indexed coordinates
-    # So we need to find which kernel position corresponds to distance (dy, dx)
-    # The kernel position is (dy, dx) in 0-indexed
-    # Convert back to 1-indexed for R indexing
-    kern_i <- dy + 1
-    kern_j <- dx + 1
-    
-    # Extract kernel values at these positions
-    # Use matrix indexing: kernel[kern_i, kern_j] but need to handle vectorized indexing
-    kern_rolled <- matrix(kernel[cbind(as.vector(kern_i), as.vector(kern_j))], 
-                         nrow = h, ncol = w)
-    
-    return(kern_rolled)
+    # exact np.roll(kernel, y; x)
+    roll2d(kernel, shift_y = y - 1, shift_x = x - 1)
   }
   
   # Number of points to select
-  num_points <- as.integer(length(I) * percentage)
+  num_points <- as.integer(h * w * percentage)
   
-  # Choose first point near center with minimal energy
+  # Set seed for reproducibility
+  set.seed(42)
+  
+  # --- first point: pick min in a center window ---
   cy <- as.integer(h / 2)
   cx <- as.integer(w / 2)
-  r <- min(20, as.integer(h / 10), as.integer(w / 10))
-  y_start <- max(1, cy - r)
+  r <- min(20L, as.integer(h / 10), as.integer(w / 10))
+  y_start <- max(1L, cy - r)
   y_end <- min(h, cy + r)
-  x_start <- max(1, cx - r)
+  x_start <- max(1L, cx - r)
   x_end <- min(w, cx + r)
   
   region <- energy_current[y_start:y_end, x_start:x_end]
   flat_idx <- which.min(region)
-  y0 <- ((flat_idx - 1) %/% ncol(region)) + y_start
-  x0 <- ((flat_idx - 1) %% ncol(region)) + x_start
+  
+  # IMPORTANT: R is column-major -> (y,x) from flat:
+  # y = ((idx-1) %% nrow) + 1 ; x = ((idx-1) %/% nrow) + 1
+  ry <- ((flat_idx - 1) %% nrow(region)) + 1
+  rx <- ((flat_idx - 1) %/% nrow(region)) + 1
+  y0 <- y_start + ry - 1
+  x0 <- x_start + rx - 1
   
   # Place first point
   energy_current <- energy_current + energy_splat(y0, x0)
@@ -512,7 +503,7 @@ void_and_cluster <- function(input_img,
   samples[[1]] <- c(y0, x0, I[y0, x0])
   final_stipple[y0, x0] <- 0.0  # Black dot
   
-  # Iteratively place remaining points
+  # --- iterate ---
   for(i in 2:num_points) {
     # Add exploration noise that decreases over time
     exploration <- 1.0 - ((i - 1) / num_points) * 0.5  # Decrease from 1.0 to 0.5
@@ -522,8 +513,11 @@ void_and_cluster <- function(input_img,
     
     # Find position with minimum energy (with noise for exploration)
     pos_flat <- which.min(energy_with_noise)
-    y <- ((pos_flat - 1) %/% w) + 1
-    x <- ((pos_flat - 1) %% w) + 1
+    
+    # Column-major unflatten:
+    # R matrices are column-major, so y = (idx-1) %% h + 1, x = (idx-1) %/% h + 1
+    y <- ((pos_flat - 1) %% h) + 1
+    x <- ((pos_flat - 1) %/% h) + 1
     
     # Add Gaussian splat to prevent nearby points from being selected
     energy_current <- energy_current + energy_splat(y, x)
@@ -535,7 +529,7 @@ void_and_cluster <- function(input_img,
   }
   
   # Convert samples list to matrix
-  samples_matrix <- do.call(rbind, samples)
+  samples_matrix <- do.call(rbind, samples[1:num_points])
   
   return(list(stipple = final_stipple, samples = samples_matrix))
 }
@@ -612,10 +606,14 @@ if(img_dims[1] > max_size || img_dims[2] > max_size) {
 }
 
 # Convert to matrix and normalize
-img_matrix <- as.matrix(img_resized)
+# imager uses (x,y,cc,z) = (width, height, channels, depth)
+# but R matrices use (row, col) = (y, x)
+# Extract grayscale plane and transpose to get [h, w] orientation
+arr <- as.array(img_resized)          # dims: [x, y, cc, z] = [w, h, 1, 1]
+img_matrix <- t(arr[,,1,1])           # now dims: [h, w]  (row=y, col=x)
 img_matrix <- img_matrix / max(img_matrix)
 
-cat("Final image shape:", dim(img_matrix)[1], "x", dim(img_matrix)[2], "\n")
+cat("Final image shape:", nrow(img_matrix), "x", ncol(img_matrix), "\n")
 
 # Compute importance map
 importance_map <- compute_importance(img_matrix)
@@ -728,9 +726,16 @@ plt.show()
 
 par(mfrow = c(1, 3), mar = c(2, 2, 2, 2))
 
+# Original
 plot(img_resized, axes = FALSE, main = "Original Image")
-plot(as.cimg(importance_map), axes = FALSE, main = "Importance Map")
-plot(as.cimg(stipple_pattern), axes = FALSE, main = "Blue Noise Stippling")
+
+# Importance map (matrix [h, w]) -> transpose for imager ([x, y])
+plot(as.cimg(t(importance_map), x = ncol(importance_map), y = nrow(importance_map), cc = 1), 
+     axes = FALSE, main = "Importance Map")
+
+# Stipple pattern (matrix [h, w]) -> transpose for imager ([x, y])
+plot(as.cimg(t(stipple_pattern), x = ncol(stipple_pattern), y = nrow(stipple_pattern), cc = 1), 
+     axes = FALSE, main = "Blue Noise Stippling")
 ```
 
 :::
@@ -887,9 +892,10 @@ cat("Creating GIF animation...\n")
 
 # Create list of image frames
 img_list <- lapply(1:length(frames), function(i) {
-  frame <- frames[[i]]
-  # Convert matrix to image using imager
-  img <- as.cimg(frame)
+  frame <- frames[[i]]                 # matrix [h, w]
+  # Convert matrix to image using imager - transpose for imager ([x, y])
+  # Be explicit with dimensions to avoid shape misreads
+  img <- as.cimg(t(frame), x = ncol(frame), y = nrow(frame), cc = 1)
   # Add title using magick (convert from imager first)
   img_magick <- image_read(as.raster(img))
   img_magick <- image_annotate(img_magick, 
